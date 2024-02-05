@@ -219,6 +219,9 @@ static inline bool boot_cpu_has(unsigned int feat)
 #define cpu_has_xen_ibt         boot_cpu_has(X86_FEATURE_XEN_IBT)
 
 #define cpu_has_msr_tsc_aux     (cpu_has_rdtscp || cpu_has_rdpid)
+#define cpu_has_amd_sme         boot_cpu_has(X86_FEATURE_AMD_SME)
+#define cpu_has_amd_sev         boot_cpu_has(X86_FEATURE_AMD_SEV)
+#define cpu_has_sme_coherency   boot_cpu_has(X86_FEATURE_AMD_SME_COHERENCY)
 
 /* Bugs. */
 #define cpu_bug_fpu_ptrs        boot_cpu_has(X86_BUG_FPU_PTRS)

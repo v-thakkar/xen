@@ -42,6 +42,10 @@ XEN_CPUFEATURE(XEN_SHSTK,         X86_SYNTH(26)) /* Xen uses CET Shadow Stacks *
 XEN_CPUFEATURE(XEN_IBT,           X86_SYNTH(27)) /* Xen uses CET Indirect Branch Tracking */
 XEN_CPUFEATURE(IBPB_ENTRY_PV,     X86_SYNTH(28)) /* MSR_PRED_CMD used by Xen for PV */
 XEN_CPUFEATURE(IBPB_ENTRY_HVM,    X86_SYNTH(29)) /* MSR_PRED_CMD used by Xen for HVM */
+XEN_CPUFEATURE(AMD_SME,           X86_SYNTH(30)) /* AMD Secure Memory Encrypion */
+XEN_CPUFEATURE(AMD_SEV,           X86_SYNTH(31)) /* AMD Secure Encryption Virtualization */
+XEN_CPUFEATURE(AMD_SME_COHERENCY, X86_SYNTH(32)) /* AMD Secure Memory Encryption Coherency Enforcement */
+// TODO: Do we need VM_PAGE_FLUSH now?
 
 /* Bug words follow the synthetic words. */
 #define X86_NR_BUG 1

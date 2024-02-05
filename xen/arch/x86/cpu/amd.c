@@ -56,6 +56,8 @@ bool __initdata amd_virt_spec_ctrl;
 
 static bool __read_mostly zen2_c6_disabled;
 
+uint64_t __read_mostly pte_c_bit_mask;
+
 static inline int rdmsr_amd_safe(unsigned int msr, unsigned int *lo,
 				 unsigned int *hi)
 {
@@ -1025,6 +1027,46 @@ static void amd_check_erratum_1485(void)
 	wrmsrl(MSR_AMD64_BP_CFG, val | chickenbit);
 }
 
+static void amd_enable_sme(const struct cpuinfo_x86 *c)
+{
+	unsigned int eax, ebx, ecx, edx;
+	uint64_t syscfg;
+
+	if (!c->cpu_core_id) {
+		cpuid_count(0x80000000,0,&eax, &ebx, &ecx, &edx);
+		if (eax >=  0x8000001f) {
+	    	cpuid_count(0x8000001f,0,&eax, &ebx, &ecx, &edx);
+
+	    	if (eax & 0x1) {  /* eax[0] is SEV support */
+				setup_force_cpu_cap(X86_FEATURE_AMD_SME);
+		    	/* ebx[0:5] is C-bit position */
+				pte_c_bit_mask = 1UL << (ebx & 0x3f);
+
+				if (eax & (1<<10)) /* eax[10] is SEV Coherency Enforcement */
+					setup_force_cpu_cap(X86_FEATURE_AMD_SME_COHERENCY);
+	    	}
+		}
+    }
+    if (!cpu_has_amd_sme) {
+		if (!c->cpu_core_id)
+	    	printk("XEN: AMD SME is not supported\n");
+		return;
+    }
+    if (!c->cpu_core_id) {
+		printk("XEN: AMD SME is supported, coherency is %s enforced, c-bit mask - 0x%lx\n",
+				cpu_has_sme_coherency ? "":"not ", pte_c_bit_mask);
+    }
+
+    rdmsrl(MSR_K8_SYSCFG, syscfg);
+    if (syscfg & SYSCFG_AMD64_MEM_ENCRYPT) {
+		printk("XEN: AMD SME is allready enabled on CPU (0x%x:0x%x)\n", c->apicid, c->cpu_core_id);
+		return;
+	}
+    syscfg |= SYSCFG_AMD64_MEM_ENCRYPT;
+    wrmsrl(MSR_K8_SYSCFG, syscfg);
+    printk("XEN: Enabling AMD SME on CPU (0x%x:0x%x)\n", c->apicid, c->cpu_core_id);
+}
+
 static void cf_check init_amd(struct cpuinfo_x86 *c)
 {
 	u32 l, h;
@@ -1300,6 +1342,8 @@ static void cf_check init_amd(struct cpuinfo_x86 *c)
 	check_syscfg_dram_mod_en();
 
 	amd_log_freq(c);
+
+	amd_enable_sme(c);
 }
 
 const struct cpu_dev amd_cpu_dev = {
