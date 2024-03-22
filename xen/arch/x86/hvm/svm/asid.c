@@ -43,12 +43,15 @@ void svm_asid_handle_vmrun(void)
         return;
     }
 
-    if ( vmcb_get_asid(vmcb) != p_asid->asid )
-        vmcb_set_asid(vmcb, p_asid->asid);
+    /*if ( vmcb_get_asid(vmcb) != p_asid->asid )
+        vmcb_set_asid(vmcb, p_asid->asid);*/
 
     vmcb->tlb_control =
         !need_flush ? TLB_CTRL_NO_FLUSH :
         cpu_has_svm_flushbyasid ? TLB_CTRL_FLUSH_ASID : TLB_CTRL_FLUSH_ALL;
+
+    if (!need_flush && vmcb_get_asid(vmcb) != p_asid->asid)
+        vmcb_set_asid(vmcb, p_asid->asid);
 }
 
 /*
