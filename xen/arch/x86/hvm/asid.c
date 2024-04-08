@@ -130,7 +130,7 @@ bool hvm_asid_handle_vmenter(struct hvm_vcpu_asid *asid)
      * When we assign ASID 1, flush all TLB entries as we are starting a new
      * generation, and all old ASID allocations are now stale. 
      */
-    return (asid->asid == 1);
+    return 0;
 
  disabled:
     asid->asid = 0;

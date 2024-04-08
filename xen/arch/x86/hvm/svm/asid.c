@@ -39,7 +39,7 @@ void svm_asid_handle_vmrun(void)
     {
         vmcb_set_asid(vmcb, true);
         vmcb->tlb_control =
-            cpu_has_svm_flushbyasid ? TLB_CTRL_FLUSH_ASID : TLB_CTRL_FLUSH_ALL;
+            cpu_has_svm_flushbyasid ? TLB_CTRL_FLUSH_ASID : TLB_CTRL_NO_FLUSH;
         return;
     }
 
@@ -47,8 +47,7 @@ void svm_asid_handle_vmrun(void)
         vmcb_set_asid(vmcb, p_asid->asid);
 
     vmcb->tlb_control =
-        !need_flush ? TLB_CTRL_NO_FLUSH :
-        cpu_has_svm_flushbyasid ? TLB_CTRL_FLUSH_ASID : TLB_CTRL_FLUSH_ALL;
+        need_flush && cpu_has_svm_flushbyasid ? TLB_CTRL_FLUSH_ASID : TLB_CTRL_NO_FLUSH;
 }
 
 /*
