@@ -38,14 +38,6 @@ boolean_param("asid", opt_asid_enabled);
  * ASID useage to retain correctness.
  */
 
-/* Per-CPU ASID management. */
-struct hvm_asid_data {
-   uint64_t core_asid_generation;
-   uint32_t next_asid;
-   uint32_t max_asid;
-   bool disabled;
-};
-
 static DEFINE_PER_CPU(struct hvm_asid_data, hvm_asid_data);
 
 void hvm_asid_init(int nasids)
@@ -116,7 +108,9 @@ bool hvm_asid_handle_vmenter(struct hvm_vcpu_asid *asid)
     /* If there are no free ASIDs, need to go to a new generation */
     if ( unlikely(data->next_asid > data->max_asid) )
     {
+        printk(XENLOG_INFO "Hitting unlikely condition");
         hvm_asid_flush_core();
+        //++data->core_asid_generation; to differentiate between ASIDs issued in different cycles
         data->next_asid = 1;
         if ( data->disabled )
             goto disabled;

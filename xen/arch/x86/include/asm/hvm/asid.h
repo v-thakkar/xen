@@ -28,6 +28,17 @@ void hvm_asid_flush_core(void);
  * boolean indicating whether all ASIDs must be flushed. */
 bool hvm_asid_handle_vmenter(struct hvm_vcpu_asid *asid);
 
+/* Per-CPU ASID management. */
+struct hvm_asid_data {
+   uint64_t core_asid_generation;
+   uint32_t next_asid;
+  // uint32_t min_asid;
+   uint32_t max_asid;
+   bool disabled;
+};
+
+//DEFINE_PER_CPU(struct hvm_asid_data, hvm_asid_data);
+
 #endif /* __ASM_X86_HVM_ASID_H__ */
 
 /*
