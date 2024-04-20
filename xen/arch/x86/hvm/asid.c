@@ -45,7 +45,8 @@ void hvm_asid_init(int nasids)
     static int8_t g_disabled = -1;
     struct hvm_asid_data *data = &this_cpu(hvm_asid_data);
 
-    data->max_asid = nasids - 1;
+    data->min_asid = 1;
+    data->max_asid = nasids - data->min_asid;
     data->disabled = !opt_asid_enabled || (nasids <= 1);
 
     if ( g_disabled != data->disabled )
@@ -58,8 +59,8 @@ void hvm_asid_init(int nasids)
     /* Zero indicates 'invalid generation', so we start the count at one. */
     data->core_asid_generation = 1;
 
-    /* Zero indicates 'ASIDs disabled', so we start the count at one. */
-    data->next_asid = 1;
+    /* Zero indicates 'ASIDs disabled', so we start the count at min_asid. */
+    data->next_asid = data->min_asid;
 }
 
 void hvm_asid_flush_vcpu_asid(struct hvm_vcpu_asid *asid)
@@ -111,7 +112,7 @@ bool hvm_asid_handle_vmenter(struct hvm_vcpu_asid *asid)
         printk(XENLOG_INFO "Hitting unlikely condition");
         hvm_asid_flush_core();
         //++data->core_asid_generation; to differentiate between ASIDs issued in different cycles
-        data->next_asid = 1;
+        data->next_asid = data->min_asid;
         if ( data->disabled )
             goto disabled;
     }

@@ -32,7 +32,7 @@ bool hvm_asid_handle_vmenter(struct hvm_vcpu_asid *asid);
 struct hvm_asid_data {
    uint64_t core_asid_generation;
    uint32_t next_asid;
-  // uint32_t min_asid;
+   uint32_t min_asid;
    uint32_t max_asid;
    bool disabled;
 };
