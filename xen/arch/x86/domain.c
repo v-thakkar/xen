@@ -52,6 +52,7 @@
 #include <asm/ldt.h>
 #include <asm/hvm/hvm.h>
 #include <asm/hvm/nestedhvm.h>
+#include <asm/hvm/asid.h>
 #include <asm/hvm/svm/svm.h>
 #include <asm/hvm/viridian.h>
 #include <asm/debugreg.h>
@@ -557,6 +558,7 @@ int arch_vcpu_create(struct vcpu *v)
     struct domain *d = v->domain;
     int rc;
 
+    printk(XENLOG_INFO "arch_vcpu_create called for domain %d \n", d->domain_id);
     v->arch.flags = TF_kernel_mode;
 
     rc = mapcache_vcpu_init(v);
@@ -603,6 +605,9 @@ int arch_vcpu_create(struct vcpu *v)
 
         cpu_policy_updated(v);
     }
+
+    /*if (cpu_has_svm)
+        svm_vcpu_assign_asid(v);*/
 
     return rc;
 
@@ -784,8 +789,10 @@ int arch_domain_create(struct domain *d,
                        unsigned int flags)
 {
     bool paging_initialised = false;
+    struct hvm_domain_asid *p_asid;
     uint32_t emflags;
     int rc;
+    printk(XENLOG_INFO "arch_domain_create called");
 
     INIT_PAGE_LIST_HEAD(&d->arch.relmem_list);
 
@@ -897,6 +904,12 @@ int arch_domain_create(struct domain *d,
     d->arch.msr_relaxed = config->arch.misc_flags & XEN_X86_MSR_RELAXED;
 
     spec_ctrl_init_domain(d);
+
+    if ( is_hvm_domain(d) ) {
+        printk(XENLOG_INFO "hvm_domain_asid_create called for domain %d", d->domain_id);
+        p_asid = &d->arch.hvm.n1asid;
+        hvm_asid_domain_create(p_asid);
+    }
 
     return 0;
 

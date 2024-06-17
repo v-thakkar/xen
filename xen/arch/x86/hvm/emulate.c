@@ -2490,6 +2490,7 @@ static int cf_check hvmemul_tlb_op(
     struct hvm_emulate_ctxt *hvmemul_ctxt =
         container_of(ctxt, struct hvm_emulate_ctxt, ctxt);
     int rc = X86EMUL_OKAY;
+    printk(XENLOG_INFO "hvmemul_tlb_op called");
 
     switch ( op )
     {

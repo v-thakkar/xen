@@ -41,8 +41,6 @@ nestedhvm_vcpu_reset(struct vcpu *v)
     nv->stale_np2m = false;
     nv->np2m_generation = 0;
 
-    hvm_asid_flush_vcpu_asid(&nv->nv_n2asid);
-
     alternative_vcall(hvm_funcs.nhvm_vcpu_reset, v);
 
     /* vcpu is in host mode */
@@ -82,11 +80,12 @@ static void cf_check nestedhvm_flushtlb_ipi(void *info)
         return;
     }
 
+    // TODO(vaishali): change the comment
     /* Just flush the ASID (or request a new one).
      * This is cheaper than flush_tlb_local() and has
      * the same desired effect.
      */
-    hvm_asid_flush_core();
+    flush_tlb_local();
     vcpu_nestedhvm(v).nv_p2m = NULL;
     vcpu_nestedhvm(v).stale_np2m = true;
 }

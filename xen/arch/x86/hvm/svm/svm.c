@@ -25,6 +25,7 @@
 #include <asm/hvm/monitor.h>
 #include <asm/hvm/nestedhvm.h>
 #include <asm/hvm/support.h>
+#include <asm/hvm/asid.h>
 #include <asm/hvm/svm/svm.h>
 #include <asm/hvm/svm/svmdebug.h>
 #include <asm/hvm/svm/vmcb.h>
@@ -41,6 +42,7 @@
 #include <public/sched.h>
 
 #include "nestedhvm.h"
+#include "xen/config.h"
 #include "svm.h"
 
 void noreturn svm_asm_do_resume(void);
@@ -179,17 +181,15 @@ static void cf_check svm_update_guest_cr(
         break;
     case 3:
         vmcb_set_cr3(vmcb, v->arch.hvm.hw_cr[3]);
-        if ( !nestedhvm_enabled(v->domain) )
+        /*if ( !nestedhvm_enabled(v->domain) )
         {
             if ( !(flags & HVM_UPDATE_GUEST_CR3_NOFLUSH) )
                 hvm_asid_flush_vcpu(v);
-        }
-        else if ( nestedhvm_vmswitch_in_progress(v) )
+        }*/
+        if ( nestedhvm_vmswitch_in_progress(v) )
             ; /* CR3 switches during VMRUN/VMEXIT do not flush the TLB. */
-        else if ( !(flags & HVM_UPDATE_GUEST_CR3_NOFLUSH) )
-            hvm_asid_flush_vcpu_asid(
-                nestedhvm_vcpu_in_guestmode(v)
-                ? &vcpu_nestedhvm(v).nv_n2asid : &v->arch.hvm.n1asid);
+        /*else if ( !(flags & HVM_UPDATE_GUEST_CR3_NOFLUSH) )
+            hvm_asid_flush_vcpu_asid(&v->arch.hvm.n1asid);*/
         break;
     case 4:
         value = HVM_CR4_HOST_MASK;
@@ -989,8 +989,9 @@ static void noreturn cf_check svm_do_resume(void)
         v->arch.hvm.svm.launch_core = smp_processor_id();
         hvm_migrate_timers(v);
         hvm_migrate_pirqs(v);
-        /* Migrating to another ASID domain.  Request a new ASID. */
-        hvm_asid_flush_vcpu(v);
+        printk(XENLOG_INFO "Migrated timers and pirqs to the new pcpu");
+        /*Migrating to another ASID domain. Request a new ASID.
+        hvm_asid_flush_domain(v->domain);*/
     }
 
     if ( !vcpu_guestmode && !vlapic_hw_disabled(vlapic) )
@@ -1016,8 +1017,6 @@ void asmlinkage svm_vmenter_helper(void)
     struct vmcb_struct *vmcb = curr->arch.hvm.svm.vmcb;
 
     ASSERT(hvmemul_cache_disabled(curr));
-
-    svm_asid_handle_vmrun();
 
     TRACE_TIME(TRC_HVM_VMENTRY |
                (nestedhvm_vcpu_in_guestmode(curr) ? TRC_HVM_NESTEDFLAG : 0));
@@ -1114,6 +1113,7 @@ static int cf_check acpi_c1e_quirk(
 
 static int cf_check svm_domain_initialise(struct domain *d)
 {
+    //struct hvm_domain_asid *p_asid;
     static const struct arch_csw csw = {
         .from = svm_ctxt_switch_from,
         .to   = svm_ctxt_switch_to,
@@ -1123,6 +1123,12 @@ static int cf_check svm_domain_initialise(struct domain *d)
     d->arch.ctxt_switch = &csw;
 
     svm_guest_osvw_init(d);
+
+ /*   printk(XENLOG_INFO "asid %u is there", p_asid->asid);
+    printk(XENLOG_INFO "asid %u is there", d->arch.hvm.n1asid.asid);
+    p_asid = &d->arch.hvm.n1asid;
+    hvm_asid_domain_create(p_asid);
+    printk(XENLOG_INFO "asid %u assigned", p_asid->asid);*/
 
     if ( is_hardware_domain(d) && amd_acpi_c1e_quirk )
         register_portio_handler(d, acpi_smi_cmd, 1, acpi_c1e_quirk);
@@ -1136,13 +1142,16 @@ static int cf_check svm_vcpu_initialise(struct vcpu *v)
 
     v->arch.hvm.svm.launch_core = -1;
 
-    if ( (rc = svm_create_vmcb(v)) != 0 )
-    {
+    printk(XENLOG_INFO "svm_vcpu_initialise called for a vcpu for the domain %d\n", v->domain->domain_id );
+    if ( (rc = svm_create_vmcb(v)) != 0)
+    { 
         dprintk(XENLOG_WARNING,
                 "Failed to create VMCB for vcpu %d: err=%d.\n",
                 v->vcpu_id, rc);
         return rc;
     }
+
+    //svm_vcpu_assign_asid(v);
 
     return 0;
 }
@@ -1571,8 +1580,9 @@ static int _svm_cpu_up(bool bsp)
     /* check for erratum 383 */
     svm_init_erratum_383(c);
 
-    /* Initialize core's ASID handling. */
+    /*ASID initialization per core*/
     svm_asid_init(c);
+    printk(XENLOG_INFO "svm_asid_init called\n");
 
     /* Initialize OSVW bits to be used by guests */
     svm_host_osvw_init();
@@ -2332,13 +2342,11 @@ static void svm_vmexit_do_invalidate_cache(struct cpu_user_regs *regs,
     __update_guest_eip(regs, inst_len);
 }
 
+//TODO(vaishali): Handle for nested virtualization as well
 static void svm_invlpga_intercept(
-    struct vcpu *v, unsigned long linear, uint32_t asid)
+    struct domain *d, unsigned long linear, uint32_t asid)
 {
-    svm_invlpga(linear,
-                (asid == 0)
-                ? v->arch.hvm.n1asid.asid
-                : vcpu_nestedhvm(v).nv_n2asid.asid);
+    svm_invlpga(linear, d->arch.hvm.n1asid.asid);
 }
 
 static void svm_invlpg_intercept(unsigned long linear)
@@ -2360,7 +2368,7 @@ static bool cf_check is_invlpg(
 static void cf_check svm_invlpg(struct vcpu *v, unsigned long linear)
 {
     /* Safe fallback. Take a new ASID. */
-    hvm_asid_flush_vcpu(v);
+    hvm_asid_flush_domain(v->domain);
 }
 
 static bool cf_check svm_get_pending_event(
@@ -2929,7 +2937,7 @@ void asmlinkage svm_vmexit_handler(void)
         }
         if ( (insn_len = svm_get_insn_len(v, INSTR_INVLPGA)) == 0 )
             break;
-        svm_invlpga_intercept(v, regs->rax, regs->ecx);
+        svm_invlpga_intercept(v->domain, regs->rax, regs->ecx);
         __update_guest_eip(regs, insn_len);
         break;
 

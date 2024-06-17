@@ -17,7 +17,7 @@
 #include <asm/mtrr.h>
 #include <public/hvm/ioreq.h>
 
-struct hvm_vcpu_asid {
+struct hvm_domain_asid {
     uint64_t generation;
     uint32_t asid;
 };
@@ -90,8 +90,6 @@ struct nestedvcpu {
     bool stale_np2m; /* True when p2m_base in VMCx02 is no longer valid */
     uint64_t np2m_generation;
 
-    struct hvm_vcpu_asid nv_n2asid;
-
     bool nv_vmentry_pending;
     bool nv_vmexit_pending;
     bool nv_vmswitch_in_progress; /* true during vmentry/vmexit emulation */
@@ -151,8 +149,6 @@ struct hvm_vcpu {
 
     /* (MFN) hypervisor page table */
     pagetable_t         monitor_table;
-
-    struct hvm_vcpu_asid n1asid;
 
     u64                 msr_tsc_adjust;
 

@@ -141,6 +141,8 @@ struct hvm_domain {
     } write_map;
 
     struct hvm_pi_ops pi_ops;
+    struct hvm_domain_asid n1asid;
+    struct hvm_domain_asid nv_n2asid;
 
     union {
         struct vmx_domain vmx;
