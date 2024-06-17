@@ -1959,8 +1959,6 @@ void cf_check vmx_do_resume(void)
          * but the action of another VMCS is deferred till it is switched in.
          */
         v->arch.hvm.vmx.hostenv_migrated = 1;
-
-        hvm_asid_flush_vcpu(v);
     }
 
     debug_state = v->domain->debugger_attached
