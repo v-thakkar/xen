@@ -1394,6 +1394,10 @@ void parse_config_data(const char *config_source,
         exit(1);
     }
 
+    if (!xlu_cfg_get_defbool (config, "sev", &buf, 0) )
+        fprintf(stdout, "Checked for sev");
+        
+
     if (!xlu_cfg_get_string (config, "uuid", &buf, 0) ) {
         if ( libxl_uuid_from_string(&c_info->uuid, buf) ) {
             fprintf(stderr, "Failed to parse UUID: %s\n", buf);
