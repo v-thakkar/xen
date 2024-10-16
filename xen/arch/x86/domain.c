@@ -718,6 +718,13 @@ int arch_sanitise_domain_config(struct xen_domctl_createdomain *config)
         return -EINVAL;
     }
 
+    if ( config->arch.misc_flags & ~XEN_X86_SEV_ENABLED )
+    {
+        dprintk(XENLOG_INFO, "Invalid arch misc flags %#x\n",
+                config->arch.misc_flags);
+        return -EINVAL;
+    } 
+
     if ( config->altp2m_opts & ~XEN_DOMCTL_ALTP2M_mode_mask )
     {
         dprintk(XENLOG_INFO, "Invalid altp2m options selected: %#x\n",

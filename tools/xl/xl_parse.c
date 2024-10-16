@@ -1394,6 +1394,9 @@ void parse_config_data(const char *config_source,
         exit(1);
     }
 
+    if (!xlu_cfg_get_defbool (config, "sev", &b_info.arch_x86.sev_enabled, 0) )
+        b_info->arch_x86.sev_enabled = false;
+
     if (!xlu_cfg_get_string (config, "uuid", &buf, 0) ) {
         if ( libxl_uuid_from_string(&c_info->uuid, buf) ) {
             fprintf(stderr, "Failed to parse UUID: %s\n", buf);

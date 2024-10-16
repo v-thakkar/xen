@@ -26,6 +26,9 @@ int libxl__arch_domain_prepare_config(libxl__gc *gc,
     if (libxl_defbool_val(d_config->b_info.arch_x86.msr_relaxed))
         config->arch.misc_flags |= XEN_X86_MSR_RELAXED;
 
+    if (libxl_defbool_val(d_config->b_info.arch_x86.sev))
+        config->arch.misc_flags |= XEN_X86_SEV_ENABLED;
+
     return 0;
 }
 

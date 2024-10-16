@@ -300,7 +300,9 @@ struct xen_arch_domainconfig {
  * doesn't allow the guest to read or write to the underlying MSR.
  */
 #define XEN_X86_MSR_RELAXED (1u << 0)
+#define XEN_X86_SEV_ENABLED (1u << 1)
     uint32_t misc_flags;
+    
 };
 
 /* Max  XEN_X86_* constant. Used for ABI checking. */
