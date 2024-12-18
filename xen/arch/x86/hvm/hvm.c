@@ -3536,6 +3536,7 @@ unsigned int copy_from_user_hvm(void *to, const void *from, unsigned int len)
 
     if ( is_sev_domain(current->domain) )
     {
+        printk(XENLOG_INFO "copy_from_user_hvm called");
         rc = hvm_copy_from_guest_phys(to, (paddr_t)from, len);
     }
     else

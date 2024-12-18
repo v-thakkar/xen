@@ -13,6 +13,4 @@ struct sev_launch_update_data {
 typedef struct sev_launch_update_data sev_launch_update_data_t;
 DEFINE_XEN_GUEST_HANDLE(sev_launch_update_data_t);
 
-extern long do_dom_coco_op(unsigned int cmd, XEN_GUEST_HANDLE_PARAM(void) arg);
-
 #endif /* __XEN_PUBLIC_HVM_COCO_H__ */

@@ -9,6 +9,7 @@
 #include <xen/domain_page.h>
 #include <asm/p2m.h>
 #include <xen/guest_access.h>
+#include <xen/hypercall.h>
 
 long
 do_dom_coco_op(unsigned int cmd, XEN_GUEST_HANDLE_PARAM(void) arg)
@@ -17,8 +18,10 @@ do_dom_coco_op(unsigned int cmd, XEN_GUEST_HANDLE_PARAM(void) arg)
     sev_launch_update_data_t data = {};
 
     printk(XENLOG_INFO "before copying from guest");
-    if( (copy_from_guest(&data, arg, 1)) )
+    if( (copy_from_guest(&data, arg, 1)) ) {
+        printk(XENLOG_INFO "Got into the copy_from_guest");
         return -EFAULT;
+    }
 
     printk(XENLOG_INFO "do_dom_coco_op is about to finish: %u, %u, %lu, %lu", cmd, data.domid, data.address, data.len);
     return arch_dom_coco_op(cmd, data.domid, data.address, data.len);
